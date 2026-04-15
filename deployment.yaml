@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamflix-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: streamflix
+  template:
+    metadata:
+      labels:
+        app: streamflix
+    spec:
+      containers:
+      - name: streamflix
+        image: streamflix
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
