@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: streamflix
-        image: streamflix
-        imagePullPolicy: IfNotPresent
+        image: kubeafreen/streamflix:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
