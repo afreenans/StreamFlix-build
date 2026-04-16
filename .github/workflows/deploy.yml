@@ -35,8 +35,17 @@ steps:
 
   - name: Validate files
     run: |
-      echo "Checking files..."
+      echo "📁 Current directory:"
+      pwd
+      echo "📂 Files list:"
       ls -la
+
+      if [ ! -f index.html ]; then
+        echo "❌ index.html not found"
+        exit 1
+      fi
+
+      echo "✅ Validation passed"
 
   - name: Create archive
     run: |
@@ -69,4 +78,5 @@ steps:
       artifacts: release/streamflix-${{ needs.build.outputs.version }}.tar.gz
       token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
 
