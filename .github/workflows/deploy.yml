@@ -1,15 +1,21 @@
-name: StreamFlix CI/CD
+name: Build and Release
 
 on:
 push:
 branches:
 - main
+- master
+paths:
+- "**"
+- .github/workflows/deploy.yml
+workflow_dispatch:
 
 permissions:
 contents: write
 
 jobs:
 build:
+name: Build
 runs-on: ubuntu-latest
 outputs:
 version: ${{ steps.version.outputs.version }}
@@ -22,10 +28,11 @@ steps:
     id: version
     run: |
       VERSION="$(date +%Y.%m.%d).${{ github.run_number }}"
-      echo "version=$VERSION" >> $GITHUB_OUTPUT
+      echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 ```
 
 package:
+name: Package
 runs-on: ubuntu-latest
 needs: build
 
@@ -33,19 +40,15 @@ needs: build
 steps:
   - uses: actions/checkout@v4
 
-  - name: Validate files
+  - name: Validate project
     run: |
-      echo "📁 Current directory:"
-      pwd
-      echo "📂 Files list:"
+      echo "Checking project structure..."
       ls -la
 
       if [ ! -f index.html ]; then
-        echo "❌ index.html not found"
+        echo "❌ index.html missing"
         exit 1
       fi
-
-      echo "✅ Validation passed"
 
   - name: Create archive
     run: |
@@ -57,26 +60,63 @@ steps:
     with:
       name: streamflix-${{ needs.build.outputs.version }}
       path: dist/streamflix-${{ needs.build.outputs.version }}.tar.gz
+      retention-days: 30
+```
+
+quality:
+name: Quality Checks
+runs-on: ubuntu-latest
+needs: build
+
+```
+steps:
+  - uses: actions/checkout@v4
+
+  - name: Validate files
+    run: |
+      echo "Running quality checks..."
+
+      test -f index.html
+      test -f manifest.json
+
+      for json in $(find . -name "*.json"); do
+        python3 -m json.tool "$json" > /dev/null
+      done
 ```
 
 release:
+name: Create Release
 runs-on: ubuntu-latest
-needs: [build, package]
+needs: [build, package, quality]
 
 ```
 steps:
   - uses: actions/download-artifact@v4
     with:
       name: streamflix-${{ needs.build.outputs.version }}
-      path: release
+      path: release-artifact
 
-  - name: Create Release
+  - name: Create release
     uses: ncipollo/release-action@v1
     with:
       tag: v${{ needs.build.outputs.version }}
       name: v${{ needs.build.outputs.version }}
-      artifacts: release/streamflix-${{ needs.build.outputs.version }}.tar.gz
+      body: Build ${{ needs.build.outputs.version }}
+      artifacts: release-artifact/streamflix-${{ needs.build.outputs.version }}.tar.gz
       token: ${{ secrets.GITHUB_TOKEN }}
+      allowUpdates: true
 ```
+
+deploy:
+name: Deploy (Skipped)
+if: ${{ false }}
+runs-on: ubuntu-latest
+needs: [build, release]
+
+```
+steps:
+  - run: echo "Deploy step skipped"
+```
+
 
 
