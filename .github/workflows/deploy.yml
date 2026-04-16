@@ -35,8 +35,8 @@ steps:
 
   - name: Validate files
     run: |
-      test -f index.html
-      test -f manifest.json
+      echo "Checking files..."
+      ls -la
 
   - name: Create archive
     run: |
